@@ -9,21 +9,21 @@ import           Data.List.Split (splitOn)
 import           Data.Maybe
 import           Data.Monoid
 import           Data.Version (Version(Version), showVersion)
-import           Distribution.InstalledPackageInfo (exposedModules, installedPackageId)
+import           Distribution.InstalledPackageInfo (exposedModules, installedUnitId)
 #if MIN_VERSION_Cabal(1,21,0)
 import           Distribution.InstalledPackageInfo (exposedName)
 #endif
 import           Distribution.ModuleName (ModuleName)
 import qualified Distribution.ModuleName as MN
-import           Distribution.Package (InstalledPackageId(..), packageId, pkgName)
+import           Distribution.Package (UnitId(SimpleUnitId), ComponentId(ComponentId), packageId, pkgName)
 import qualified Distribution.PackageDescription as PD
 import           Distribution.Simple.Compiler
-import           Distribution.Simple.Configure (localBuildInfoFile, getPersistBuildConfig, checkPersistBuildConfigOutdated)
+import           Distribution.Simple.Configure (localBuildInfoFile, checkPersistBuildConfigOutdated)
 #if MIN_VERSION_Cabal(1,21,0)
 import           Distribution.Simple.Configure (tryGetPersistBuildConfig, ConfigStateFileError(..))
 #endif
 import           Distribution.Simple.LocalBuildInfo
-import           Distribution.Simple.PackageIndex (lookupInstalledPackageId)
+import           Distribution.Simple.PackageIndex (lookupUnitId)
 import           Distribution.Simple.Utils (cabalVersion)
 import           Distribution.Text (display)
 import qualified Language.Haskell.Exts as H
@@ -193,14 +193,14 @@ main = do
 
             pkgs = componentPackageDeps clbi
 
-            ipinfos = [ fromMaybe (error (show ipkgid)) $ lookupInstalledPackageId ipkgs ipkgid
-                      | (ipkgid@(InstalledPackageId i), _) <- pkgs
+            ipinfos = [ fromMaybe (error (show ipkgid)) $ lookupUnitId ipkgs ipkgid
+                      | (ipkgid@(SimpleUnitId (ComponentId i)), _) <- pkgs
                       , not ("-inplace" `isSuffixOf` i)
                       ]
 
             (ignored, unignored) = partition (\x -> display (pkgName $ packageId x) `elem` ignoredPackages) ipinfos
 
-            unused = [ installedPackageId ipinfo
+            unused = [ installedUnitId ipinfo
                      | ipinfo <- unignored
 #if MIN_VERSION_Cabal(1,21,0)
                      , let expmods = map exposedName $ exposedModules ipinfo
